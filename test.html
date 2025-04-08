@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trip Fund Tracker</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9f9f9;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    h1 { text-align: center; margin-bottom: 30px; }
+    .person {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .progress-bar {
+      background-color: #eee;
+      border-radius: 10px;
+      height: 20px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .progress {
+      height: 100%;
+      background-color: #4caf50;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    input[type="number"] {
+      width: 100px;
+      padding: 5px;
+      margin-right: 10px;
+    }
+    button {
+      padding: 5px 10px;
+      background-color: #2196f3;
+      border: none;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .remove-btn {
+      background-color: #f44336; /* Red for removing */
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌴 Trip Fund Tracker, Let's go les Boys!</h1>
+  <div id="peopleContainer"></div>
+
+  <!-- ✅ Firebase v8 UMD SDK (for simple use with script tags) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDht3wqp8xerwm9Y2KByu_VVdw-FC2ZUdU",
+      authDomain: "tripfund-75629.firebaseapp.com",
+      databaseURL: "https://tripfund-75629-default-rtdb.firebaseio.com",
+      projectId: "tripfund-75629",
+      storageBucket: "tripfund-75629.firebasestorage.app",
+      messagingSenderId: "523706886034",
+      appId: "1:523706886034:web:12f32e1eeaabdcfcf8034b"
+    };
+
+    // ✅ Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const goalAmount = 1700;
+    const people = ['Adham', 'Anis', 'Ahmed', 'Malek'];
+
+    function renderPeople(data = {}) {
+      const container = document.getElementById('peopleContainer');
+      container.innerHTML = '';
+      people.forEach(name => {
+        const amount = data[name] || 0;
+        const percent = Math.min((amount / goalAmount) * 100, 100).toFixed(1);
+        const personDiv = document.createElement('div');
+        personDiv.className = 'person';
+        personDiv.innerHTML = `
+          <h3>${name}</h3>
+          <div class="progress-bar">
+            <div class="progress" style="width: ${percent}%"></div>
+          </div>
+          <p><strong>$${amount.toFixed(2)}</strong> / $${goalAmount} (${percent}%)</p>
+          <input type="number" min="0" placeholder="Add amount" id="input-${name}" />
+          <button onclick="handleAdd('${name}')">Add</button>
+          <button class="remove-btn" onclick="handleRemove('${name}')">Remove</button>
+        `;
+        container.appendChild(personDiv);
+      });
+    }
+
+    function handleAdd(name) {
+      const input = document.getElementById(`input-${name}`);
+      const value = parseFloat(input.value);
+      if (!isNaN(value) && value > 0) {
+        db.ref('tripFund/' + name).once('value').then(snapshot => {
+          const current = snapshot.val() || 0;
+          db.ref('tripFund/' + name).set(current + value);
+          input.value = '';
+        });
+      }
+    }
+
+    function handleRemove(name) {
+      const input = document.getElementById(`input-${name}`);
+      const value = parseFloat(input.value);
+      if (!isNaN(value) && value > 0) {
+        db.ref('tripFund/' + name).once('value').then(snapshot => {
+          const current = snapshot.val() || 0;
+          const newAmount = Math.max(current - value, 0);  // Prevent negative values
+          db.ref('tripFund/' + name).set(newAmount);
+          input.value = '';
+        });
+      }
+    }
+
+    db.ref('tripFund').on('value', snapshot => {
+      const data = snapshot.val() || {};
+      renderPeople(data);
+    });
+  </script>
+</body>
+</html>
